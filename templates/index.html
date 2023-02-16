@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lap Timer</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+    <style>
+    body{
+        padding: 0;
+        margin: 0;
+        color: #fff;
+        font-family: 'Helvetica'
+    }
+    .main-layout{
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        grid-template-rows:
+            auto
+            1fr
+            auto;
+    }
+    header, main, footer {
+        padding: .25em
+    }
+    header{
+        background-color: #000;
+    }
+    main{
+        padding-y: .5em;
+        background-color: cyan;
+    }
+    footer{
+        background-color: #ccc;
+    }
+    .flex-container{
+        display: flex;
+    }
+    main > div:first-child{
+        background-color: blue;
+    }
+    main > div:last-child{
+        background-color: red;
+    }
+    .flex-container div{
+        padding: .5em;
+    }
+    .last-lap{
+        width: 25%;
+        font-size: 2em;
+    }
+    .best-lap{
+        width: 15%
+    }
+    .curent-lap{
+        width: 10%
+    }
+    .num-laps{
+        width: 10%
+    }
+    p{
+        font-size: 1em
+    }
+    </style>
+  </head>
+  <body>
+    
+    <div class="main-layout">
+        <header id="elapsed">
+            <p>Elapsed Time: 00:00:000</p>
+        </header>
+        
+        <main id="lap_times">
+            <div class="flex-container" id="lane1">
+                    <div class="last-lap">Last 00:00:000</div>
+                    <div class="best-lap">Fastest {{ formatted_fastest_lap_time1 }}</div>
+                    <div class="curent-lap">Current {{ formatted_current_lap_time1 }}</div>
+                    <div class="num-laps">Laps {{ num_laps1 }}</div>
+                </div>
+                <div class="flex-container">
+                    <div class="last-lap">Last {{ formatted_lap_time2 }}</div>
+                    <div class="best-lap">Fastest {{ formatted_shortest_lap_time2 }}</div>
+                    <div class="curent-lap"></div>
+                    <div class="num-laps">Laps {{ num_laps2 }}</div>
+                </div>
+        </main>
+        <footer>
+            <button onclick="startTimer()">Start Timer</button>
+            <button onclick="stopTimer()">Stop Timer</button>
+            <button onclick="lap1()">Lap 1</button>
+            <button onclick="lap2()">Lap 2</button>
+            <button onclick="refreshValues()">Refresh</button>
+            <button onclick="reset()">Reset</button>
+        </footer>
+    </div>
+    
+    <script>
+    function startTimer() {
+        fetch('/start_timer');
+    }
+    function stopTimer() {
+        fetch('/stop_timer');
+    }
+    function reset() {
+        fetch('/reset');
+    }
+    function refreshValues() {
+        refreshElapsed();
+        refreshLapTimes();
+    }
+    function refreshElapsed() {
+        $.ajax({
+            url: "/elapsed",
+            type: "get",
+            success: function(response) {
+                $("#elapsed").html(response);
+            },
+            error: function(xhr) {
+                //Do Something to handle error
+            }
+        });
+    }
+    function refreshLapTimes() {
+        $.ajax({
+            url: "/lap_times",
+            type: "get",
+            success: function(response) {
+                $("#lap_times").html(response);
+            },
+            error: function(xhr) {
+                //Do Something to handle error
+            }
+        });
+    }
+    /*setInterval(function(){
+        refreshElapsed() // this will run after every 5 seconds
+    }, 500);
+    setInterval(function(){
+        refreshLapTimes() // this will run after every 5 seconds
+    }, 1000);
+    */
+    
+      function lap1() {
+          fetch('/lap1');
+      }
+      function lap2() {
+          fetch('/lap2');
+      }
+    </script>
+  </body>
+</html>
