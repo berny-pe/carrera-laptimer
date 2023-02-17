@@ -21,13 +21,12 @@
             auto;
     }
     header, main, footer {
-        padding: .5em
+        padding: 1em
     }
     header{
         background-color: #000;
     }
     main{
-        padding-y: .5em;
         background-color: cyan;
     }
     footer{
@@ -37,6 +36,7 @@
     
     button {
         padding: 1.5em;
+        margin-right: 2em;
     }
     
     
@@ -50,7 +50,7 @@
         background-color: red;
     }
     .flex-container > div{
-        padding: .5em;
+        padding: 2em 1em;
     }
     
     
@@ -73,7 +73,7 @@
     }
     .time, .lap {
         display: block;
-        font-size: 2.5em;
+        font-size: 3.5em;
         font-family: 'Inconsolata', sans-serif
     }
     
@@ -164,6 +164,7 @@
         </main>
         <footer>
             <button onclick="startTimer()">Start Timer</button>
+            <button onclick="continueTimer()">Continue Timer</button>
             <button onclick="stopTimer()">Stop Timer</button>
             <button onclick="lap1()">Lap 1</button>
             <button onclick="lap2()">Lap 2</button>
@@ -186,28 +187,60 @@
         }, 750);
         
         setTimeout(function(){
+            
             fetch('/start_timer');
+            
             intervalElapsed = setInterval(function(){
                 refreshElapsed() // this will run after every 5 seconds
             }, 345);
+            
             intervalLapTimes = setInterval(function(){
                 refreshLapTimes() // this will run after every 5 seconds
             }, 654);
+            
+            intervalCheckFinished = setInterval(function(){
+                check_finished() // this will run after every 5 seconds
+            }, 125);
+            
         }, 750);
     }
+    function continueTimer() {
+        fetch('/continue_timer');
+    }
+    function check_finished() {
+        $.ajax({
+            url: "/check_finished",
+            type: "get",
+            success: function(response) {
+                if(response == 'OK'){
+                    refreshLapTimes()
+                    if(intervalElapsed)
+                        clearTimeout(intervalLapTimes);
+                    if(intervalCheckFinished)
+                        clearTimeout(intervalCheckFinished);
+                    if(intervalElapsed)
+                        clearTimeout(intervalElapsed);
+                }
+            },
+            error: function(xhr) {
+                // do something
+            }
+        });
+        
+    }
+    
     function stopTimer() {
         fetch('/stop_timer');
-        if(intervalElapsed)
-            clearTimeout(intervalElapsed);
-        if(intervalLapTimes)
-            clearTimeout(intervalLapTimes);
         refreshValues();
     }
     function reset() {
+        confirm("resetting");
         fetch('/reset');
         refreshValues();
         fetch('/reset');
         refreshValues();
+        if(null != intervalLapTimes)
+            clearTimeout(intervalLapTimes);
     }
     function refreshValues() {
         refreshElapsed();

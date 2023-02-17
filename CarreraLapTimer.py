@@ -18,7 +18,11 @@ class LapTimer:
         # Initialize variable for timers
         self.timer_running = False
         self.start_time = None
+        self.last_active_time = None
+        self.paused = 0
         self.elapsed_time = None
+        self.lane1_finished = None
+        self.lane2_finished = None
         self.last_total_time1 = None
         self.last_total_time2 = None
         self.lap_time1 = None
@@ -35,65 +39,95 @@ class LapTimer:
         if not self.timer_running:
             self.timer_running = True
             self.start_time = time.time()
+            self.lane1_finished = None
+            self.lane2_finished = None
         
+    def continue_timer(self):
+        if not self.timer_running:
+            self.timer_running = True
+            self.paused = time.time() - self.last_active_time
+            self.lane1_finished = None
+            self.lane2_finished = None
+            
     def stop_timer(self):
-        
+        self.last_active_time = time.time()
         if self.timer_running:
             self.elapsed_timer()
             self.timer_running = False
             
     def elapsed_timer(self):
+        print("-----")
         if self.timer_running:
-            self.elapsed_time = time.time() - self.start_time
+            self.elapsed_time = time.time() - self.start_time - self.paused
+        
         return self.elapsed_time
 
     def lap_callback1(self):
-        
-        if self.last_lap_time1 is not None:
-            self.last_lap_time1 = time.time() - self.last_total_time1
-        else:
-            self.last_lap_time1 = time.time() - self.start_time
-        
-        if self.fastest_lap_time1 is None or self.last_lap_time1 < self.fastest_lap_time1:
-            self.fastest_lap_time1 = self.last_lap_time1
+        if self.lane1_finished is None:
+            if self.last_lap_time1 is not None:
+                self.last_lap_time1 = time.time() - self.last_total_time1
+            else:
+                self.last_lap_time1 = time.time() - self.start_time
             
-        self.num_laps1 += 1
+            if self.fastest_lap_time1 is None or self.last_lap_time1 < self.fastest_lap_time1:
+                self.fastest_lap_time1 = self.last_lap_time1
+                
+            self.num_laps1 += 1
+            
+            self.last_total_time1 = time.time()
+            if not self.timer_running:
+                self.lane1_finished = True
         
-        self.last_total_time1 = time.time()
             
     def lap_callback2(self):
-        print(self.start_time)
-        
-        if self.last_lap_time2 is not None:
-            self.last_lap_time2 = time.time() - self.last_total_time2
-        else:
-            self.last_lap_time2 = time.time() - self.start_time
-        
-        if self.fastest_lap_time2 is None or self.last_lap_time2 < self.fastest_lap_time2:
-            self.fastest_lap_time2 = self.last_lap_time2
+        if self.lane2_finished is None:
+            if self.last_lap_time2 is not None:
+                self.last_lap_time2 = time.time() - self.last_total_time2
+            else:
+                self.last_lap_time2 = time.time() - self.start_time
             
-        self.num_laps2 += 1
-            
-        self.last_total_time2 = time.time()
+            if self.fastest_lap_time2 is None or self.last_lap_time2 < self.fastest_lap_time2:
+                self.fastest_lap_time2 = self.last_lap_time2
+                
+            self.num_laps2 += 1
+                
+            self.last_total_time2 = time.time()
+            if not self.timer_running:
+                self.lane2_finished = True
         
         
     def get_current_lap_times(self):
         if self.start_time:
-            if self.last_total_time1 is None:
-                self.lap_time1 = time.time() - self.start_time
+            if self.lane1_finished is None:
+                if self.last_total_time1 is None:
+                    self.lap_time1 = time.time() - self.start_time
+                else:
+                    self.lap_time1 = time.time() - self.last_total_time1
             else:
-                self.lap_time1 = time.time() - self.last_total_time1
-            if self.last_total_time2 is None:
-                self.lap_time2 = time.time() - self.start_time
+                self.lap_time1 = None
+                
+            if self.lane2_finished is None:
+                if self.last_total_time2 is None:
+                    self.lap_time2 = time.time() - self.start_time
+                else:
+                    self.lap_time2 = time.time() - self.last_total_time2
             else:
-                self.lap_time2 = time.time() - self.last_total_time2
-        #lap_time2 = time.time() - self.lap_time2
-            
+                self.lap_time2 = None
+      
+      
+    def check_finished(self):
+        if self.lane1_finished and self.lane2_finished:
+            return True
+    
+    
     def get_formatted_time(self, lap_time):
-        minutes = int(lap_time // 60)
-        seconds = int(lap_time % 60)
-        thousands = int((lap_time % 1) * 1000)
-        return '{:02d}:{:02d}:{:03d}'.format(minutes, seconds, thousands)
+        if lap_time is None:
+            return '00:00:000'
+        else:
+            minutes = int(lap_time // 60)
+            seconds = int(lap_time % 60)
+            thousands = int((lap_time % 1) * 1000)
+            return '{:02d}:{:02d}:{:03d}'.format(minutes, seconds, thousands)
     
     def time(self):
         if self.start_time is None:
@@ -184,6 +218,19 @@ def index():
 def start_timer():
     lap_timer.start_timer()
     return 'OK'
+
+@app.route('/continue_timer')
+def continue_timer():
+    lap_timer.continue_timer()
+    return 'OK'
+
+@app.route('/check_finished')
+def check_finished():
+    finished = lap_timer.check_finished()
+    if finished:
+        return 'OK'
+    else:
+        return 'NOK'
 
 @app.route('/stop_timer')
 def stop_timer():
