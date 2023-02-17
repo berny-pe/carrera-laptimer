@@ -35,16 +35,6 @@ class LapTimer:
         if not self.timer_running:
             self.timer_running = True
             self.start_time = time.time()
-            self.last_total_time1 = None
-            self.last_total_time2 = None
-            self.lap_time1 = None
-            self.lap_time2 = None
-            self.last_lap_time1 = None
-            self.last_lap_time2 = None
-            self.fastest_lap_time1 = None
-            self.fastest_lap_time2 = None
-            self.num_laps1 = 0
-            self.num_laps2 = 0
         
     def stop_timer(self):
         
@@ -55,30 +45,36 @@ class LapTimer:
     def elapsed_timer(self):
         if self.timer_running:
             self.elapsed_time = time.time() - self.start_time
-        print(self.elapsed_time)
         return self.elapsed_time
 
     def lap_callback1(self):
-        print(self.start_time)
         
         if self.last_lap_time1 is not None:
             self.last_lap_time1 = time.time() - self.last_total_time1
         else:
             self.last_lap_time1 = time.time() - self.start_time
-            #self.lap_time1 = time.time() - self.start_time
         
         if self.fastest_lap_time1 is None or self.last_lap_time1 < self.fastest_lap_time1:
             self.fastest_lap_time1 = self.last_lap_time1
             
         self.num_laps1 += 1
-            
         
         self.last_total_time1 = time.time()
-        print(self.last_lap_time1)
-        print(self.fastest_lap_time1)
             
     def lap_callback2(self):
-        print('lap2')
+        print(self.start_time)
+        
+        if self.last_lap_time2 is not None:
+            self.last_lap_time2 = time.time() - self.last_total_time2
+        else:
+            self.last_lap_time2 = time.time() - self.start_time
+        
+        if self.fastest_lap_time2 is None or self.last_lap_time2 < self.fastest_lap_time2:
+            self.fastest_lap_time2 = self.last_lap_time2
+            
+        self.num_laps2 += 1
+            
+        self.last_total_time2 = time.time()
         
         
     def get_current_lap_times(self):
@@ -87,6 +83,10 @@ class LapTimer:
                 self.lap_time1 = time.time() - self.start_time
             else:
                 self.lap_time1 = time.time() - self.last_total_time1
+            if self.last_total_time2 is None:
+                self.lap_time2 = time.time() - self.start_time
+            else:
+                self.lap_time2 = time.time() - self.last_total_time2
         #lap_time2 = time.time() - self.lap_time2
             
     def get_formatted_time(self, lap_time):
@@ -117,6 +117,7 @@ class LapTimer:
         # Get data for time 
         formatted_time = '00:00:000'
         formatted_current_lap_time1 = '00:00:000'
+        formatted_current_lap_time2 = '00:00:000'
         
         if self.start_time is not None:
             formatted_time = self.get_formatted_time(self.elapsed_timer())
@@ -124,6 +125,11 @@ class LapTimer:
                 formatted_current_lap_time1 = self.get_formatted_time(self.lap_time1)
             else:
                 formatted_current_lap_time1 = formatted_time
+                
+            if self.last_lap_time2 is not None:
+                formatted_current_lap_time2 = self.get_formatted_time(self.lap_time2)
+            else:
+                formatted_current_lap_time2 = formatted_time
             
             
         # Get data for timer 1
@@ -131,11 +137,27 @@ class LapTimer:
             formatted_last_lap_time1 = self.get_formatted_time(self.last_lap_time1)
         else:
             formatted_last_lap_time1 = '00:00:000'
+            
         if self.fastest_lap_time1 is not None:
             formatted_fastest_lap_time1 = self.get_formatted_time(self.fastest_lap_time1)
         else:
             formatted_fastest_lap_time1 = '00:00:000'
+        
         num_laps1 = self.num_laps1
+        
+        
+        # Get data for timer 2
+        if self.last_lap_time2 is not None:
+            formatted_last_lap_time2 = self.get_formatted_time(self.last_lap_time2)
+        else:
+            formatted_last_lap_time2 = '00:00:000'
+            
+        if self.fastest_lap_time2 is not None:
+            formatted_fastest_lap_time2 = self.get_formatted_time(self.fastest_lap_time2)
+        else:
+            formatted_fastest_lap_time2 = '00:00:000'
+        
+        num_laps2 = self.num_laps2
         
         
         return {'formatted_time': formatted_time,
@@ -145,10 +167,11 @@ class LapTimer:
                 'formatted_fastest_lap_time1': formatted_fastest_lap_time1,
                 'num_laps1': num_laps1,
                 
-                #'formatted_lap_time2': formatted_lap_time2,
-                #'formatted_fastest_lap_time2': formatted_fastest_lap_time2,
-                #'num_laps2': num_laps2
-                }
+                'formatted_current_lap_time2': formatted_current_lap_time2,
+                'formatted_last_lap_time2': formatted_last_lap_time2,
+                'formatted_fastest_lap_time2': formatted_fastest_lap_time2,
+                'num_laps2': num_laps2,
+            }
         
 lap_timer = LapTimer()
 

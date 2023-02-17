@@ -3,7 +3,7 @@
   <head>
     <title>Lap Timer</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata:text=0123456798" rel="stylesheet" type="text/css" />
     <style>
     body{
         padding: 0;
@@ -21,7 +21,7 @@
             auto;
     }
     header, main, footer {
-        padding: .25em
+        padding: .5em
     }
     header{
         background-color: #000;
@@ -32,8 +32,15 @@
     }
     footer{
         background-color: #ccc;
+        padding-bottom: 2em;
     }
-    .flex-container{
+    
+    button {
+        padding: 1.5em;
+    }
+    
+    
+    header, .flex-container{
         display: flex;
     }
     main > div:first-child{
@@ -42,47 +49,118 @@
     main > div:last-child{
         background-color: red;
     }
-    .flex-container div{
+    .flex-container > div{
         padding: .5em;
     }
+    
+    
     .last-lap{
-        width: 25%;
-        font-size: 2em;
+        width: 30%;
     }
     .best-lap{
-        width: 15%
+        width: 30%
     }
     .curent-lap{
-        width: 10%
+        width: 25%
     }
     .num-laps{
-        width: 10%
+        width: 15%
     }
-    p{
-        font-size: 1em
+    
+    
+    .timeBlock, .lapsBlock {
+        text-align: center;
+    }
+    .time, .lap {
+        display: block;
+        font-size: 2.5em;
+        font-family: 'Inconsolata', sans-serif
+    }
+    
+    #elapsed {
+        width: 27%;
+    }
+    #startLights {
+        padding-left: 2em;
+        padding-top: 5px;
+        display: table-cell;
+        vertical-align: middle;
+    }
+    .startLight {
+        border-radius: 100%;
+        background-color: #222;
+        width: 30px;
+        height: 30px;
+        margin-right: 5px;
+        display: inline-block;
     }
     </style>
   </head>
   <body>
     
     <div class="main-layout">
-        <header id="elapsed">
-            <p>Elapsed Time: 00:00:000</p>
+        <header>
+            <div id="elapsed">
+                <div class="block">
+                    <div class="time timeBig">{{ formatted_time }}</div>
+                    <div>Total Race Time</div>
+                </div>
+            </div>
+            <div id="startLights">
+                <div class="startLight"></div>
+                <div class="startLight"></div>
+                <div class="startLight"></div>
+                <div class="startLight"></div>
+                <div class="startLight"></div>
+            </div>
         </header>
         
         <main id="lap_times">
+            
             <div class="flex-container" id="lane1">
-                    <div class="last-lap">Last 00:00:000</div>
-                    <div class="best-lap">Fastest {{ formatted_fastest_lap_time1 }}</div>
-                    <div class="curent-lap">Current {{ formatted_current_lap_time1 }}</div>
-                    <div class="num-laps">Laps {{ num_laps1 }}</div>
+                <div class="timeBlock best-lap">
+                    <div class="time timeBig">{{ formatted_fastest_lap_time1 }}</div>
+                    <div>Fastest</div>
                 </div>
-                <div class="flex-container">
-                    <div class="last-lap">Last {{ formatted_lap_time2 }}</div>
-                    <div class="best-lap">Fastest {{ formatted_shortest_lap_time2 }}</div>
-                    <div class="curent-lap"></div>
-                    <div class="num-laps">Laps {{ num_laps2 }}</div>
+                
+                <div class="timeBlock last-lap">
+                    <div class="time timeBig">{{ formatted_last_lap_time1 }}</div>
+                    <div>Last</div>
                 </div>
+                
+                <div class="timeBlock curent-lap">
+                    <div class="time timeBig">{{ formatted_current_lap_time1 }}</div>
+                    <div>Current</div>
+                </div>
+                
+                <div class="lapsBlock num-laps">
+                    <div class="lap">{{ num_laps1 }}</div>
+                    <div>Laps</div>
+                </div>
+            </div>
+            
+            <div class="flex-container">
+                <div class="timeBlock best-lap">
+                    <div class="time timeBig">{{ formatted_fastest_lap_time2 }}</div>
+                    <div>Fastest</div>
+                </div>
+                
+                <div class="timeBlock last-lap">
+                    <div class="time timeBig">{{ formatted_last_lap_time2 }}</div>
+                    <div>Last</div>
+                </div>
+                
+                <div class="timeBlock curent-lap">
+                    <div class="time timeBig">{{ formatted_current_lap_time2 }}</div>
+                    <div>Current</div>
+                </div>
+                
+                <div class="lapsBlock num-laps">
+                    <div class="lap">{{ num_laps2 }}</div>
+                    <div>Laps</div>
+                </div>
+            </div>
+            
         </main>
         <footer>
             <button onclick="startTimer()">Start Timer</button>
@@ -96,13 +174,40 @@
     
     <script>
     function startTimer() {
-        fetch('/start_timer');
+        alert('3');
+        setTimeout(function(){
+            alert('2');
+        }, 250);
+        setTimeout(function(){
+            alert('1');
+        }, 500);
+        setTimeout(function(){
+            alert('GO');
+        }, 750);
+        
+        setTimeout(function(){
+            fetch('/start_timer');
+            intervalElapsed = setInterval(function(){
+                refreshElapsed() // this will run after every 5 seconds
+            }, 345);
+            intervalLapTimes = setInterval(function(){
+                refreshLapTimes() // this will run after every 5 seconds
+            }, 654);
+        }, 750);
     }
     function stopTimer() {
         fetch('/stop_timer');
+        if(intervalElapsed)
+            clearTimeout(intervalElapsed);
+        if(intervalLapTimes)
+            clearTimeout(intervalLapTimes);
+        refreshValues();
     }
     function reset() {
         fetch('/reset');
+        refreshValues();
+        fetch('/reset');
+        refreshValues();
     }
     function refreshValues() {
         refreshElapsed();
@@ -132,13 +237,9 @@
             }
         });
     }
-    /*setInterval(function(){
-        refreshElapsed() // this will run after every 5 seconds
-    }, 500);
-    setInterval(function(){
-        refreshLapTimes() // this will run after every 5 seconds
-    }, 1000);
-    */
+    
+    
+    
     
       function lap1() {
           fetch('/lap1');
