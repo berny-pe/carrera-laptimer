@@ -1,212 +1,210 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>Lap Timer</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Inconsolata:text=0123456798" rel="stylesheet" type="text/css" />
     <style>
-    body{
-        padding: 0;
-        margin: 0;
-        color: #fff;
-        font-family: 'Helvetica'
-    }
-    .main-layout{
-        min-height: 100vh;
-        min-height: 100dvh;
-        display: grid;
-        grid-template-rows:
+        body{
+            padding: 0;
+            margin: 0;
+            color: #fff;
+            font-family: 'Helvetica'
+        }
+        .main-layout{
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            grid-template-rows:
             auto
             1fr
             auto;
-    }
-    header, main, footer {
-        padding: 1em
-    }
-    header{
-        background-color: #000;
-    }
-    main{
-        background-color: cyan;
-    }
-    footer{
-        background-color: #ccc;
-        padding-bottom: 2em;
-    }
-    
-    button {
-        padding: 1.5em;
-        margin-right: 2em;
-    }
-    
-    
-    header, .flex-container{
-        display: flex;
-    }
-    main > div:first-child{
-        background-color: blue;
-    }
-    main > div:last-child{
-        background-color: red;
-    }
-    .flex-container > div{
-        padding: 2em 1em;
-    }
-    
-    
-    .last-lap{
-        width: 30%;
-    }
-    .best-lap{
-        width: 30%
-    }
-    .curent-lap{
-        width: 25%
-    }
-    .num-laps{
-        width: 15%
-    }
-    
-    
-    .timeBlock, .lapsBlock {
-        text-align: center;
-    }
-    .time, .lap {
-        display: block;
-        font-size: 3.5em;
-        font-family: 'Inconsolata', sans-serif
-    }
-    
-    #elapsed {
-        width: 27%;
-    }
-    #startLights {
-        padding-left: 2em;
-        padding-top: 5px;
-        display: table-cell;
-        vertical-align: middle;
-    }
-    .startLight {
-        border-radius: 100%;
-        background-color: #222;
-        width: 30px;
-        height: 30px;
-        margin-right: 5px;
-        display: inline-block;
-    }
+        }
+        header, main, footer {
+            padding: 1em
+        }
+        header{
+            background-color: #000;
+        }
+        main{
+            background-color: cyan;
+        }
+        footer{
+            background-color: #ccc;
+            padding-bottom: 2em;
+        }
+
+        button {
+            padding: 1.5em;
+            margin-right: 2em;
+        }
+
+
+        header, .flex-container{
+            display: flex;
+        }
+        main > div:first-child{
+            background-color: blue;
+        }
+        main > div:last-child{
+            background-color: red;
+        }
+        .flex-container > div{
+            padding: 2em 1em;
+        }
+
+
+        .last-lap{
+            width: 30%;
+        }
+        .best-lap{
+            width: 30%
+        }
+        .curent-lap{
+            width: 25%
+        }
+        .num-laps{
+            width: 15%
+        }
+
+
+        .timeBlock, .lapsBlock {
+            text-align: center;
+        }
+        .time, .lap {
+            display: block;
+            font-size: 3.5em;
+            font-family: 'Inconsolata', sans-serif
+        }
+
+        #elapsed {
+            width: 27%;
+        }
+        #startLights {
+            padding-left: 2em;
+            padding-top: 5px;
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .startLight {
+            border-radius: 100%;
+            background-color: #222;
+            width: 50px;
+            height: 50px;
+            margin-right: 5px;
+            display: inline-block;
+        }
+        .redLight{
+            background-color: red;
+        }
+        .greenLight{
+            background-color: lawngreen;
+        }
     </style>
-  </head>
-  <body>
-    
-    <div class="main-layout">
-        <header>
-            <div id="elapsed">
-                <div class="block">
-                    <div class="time timeBig">{{ formatted_time }}</div>
-                    <div>Total Race Time</div>
-                </div>
+</head>
+<body>
+
+<div class="main-layout">
+    <header>
+        <div id="elapsed">
+            <div class="block">
+                <div class="time timeBig">{{ formatted_time }}</div>
+                <div>Total Race Time</div>
             </div>
-            <div id="startLights">
-                <div class="startLight"></div>
-                <div class="startLight"></div>
-                <div class="startLight"></div>
-                <div class="startLight"></div>
-                <div class="startLight"></div>
+        </div>
+        <div id="startLights">
+            <div class="startLight"></div>
+            <div class="startLight"></div>
+            <div class="startLight"></div>
+            <div class="startLight"></div>
+            <div class="startLight"></div>
+        </div>
+    </header>
+
+    <main id="lap_times">
+
+        <div class="flex-container" id="lane1">
+            <div class="timeBlock curent-lap">
+                <div class="time timeBig">{{ formatted_current_lap_time1 }}</div>
+                <div>Current</div>
             </div>
-        </header>
-        
-        <main id="lap_times">
-            
-            <div class="flex-container" id="lane1">
-                <div class="timeBlock curent-lap">
-                    <div class="time timeBig">{{ formatted_current_lap_time1 }}</div>
-                    <div>Current</div>
-                </div>
-                
-                <div class="timeBlock last-lap">
-                    <div class="time timeBig">{{ formatted_last_lap_time1 }}</div>
-                    <div>Last</div>
-                </div>
-                
-                <div class="timeBlock best-lap">
-                    <div class="time timeBig">{{ formatted_fastest_lap_time1 }}</div>
-                    <div>Fastest</div>
-                </div>
-                
-                <div class="lapsBlock num-laps">
-                    <div class="lap">{{ num_laps1 }}</div>
-                    <div>Laps</div>
-                </div>
+
+            <div class="timeBlock last-lap">
+                <div class="time timeBig">{{ formatted_last_lap_time1 }}</div>
+                <div>Last</div>
             </div>
-            
-            <div class="flex-container">
-                <div class="timeBlock curent-lap">
-                    <div class="time timeBig">{{ formatted_current_lap_time2 }}</div>
-                    <div>Current</div>
-                </div>
-                
-                <div class="timeBlock last-lap">
-                    <div class="time timeBig">{{ formatted_last_lap_time2 }}</div>
-                    <div>Last</div>
-                </div>
-                
-                <div class="timeBlock best-lap">
-                    <div class="time timeBig">{{ formatted_fastest_lap_time2 }}</div>
-                    <div>Fastest</div>
-                </div>
-                
-                <div class="lapsBlock num-laps">
-                    <div class="lap">{{ num_laps2 }}</div>
-                    <div>Laps</div>
-                </div>
+
+            <div class="timeBlock best-lap">
+                <div class="time timeBig">{{ formatted_fastest_lap_time1 }}</div>
+                <div>Fastest</div>
             </div>
-            
-        </main>
-        <footer>
-            <button onclick="startTimer()">Start Timer</button>
-            <button onclick="continueTimer()">Continue Timer</button>
-            <button onclick="stopTimer()">Stop Timer</button>
-            <button onclick="lap1()">Lap 1</button>
-            <button onclick="lap2()">Lap 2</button>
-            <button onclick="refreshValues()">Refresh</button>
-            <button onclick="reset()">Reset</button>
-        </footer>
-    </div>
-    
-    <script>
-    function startTimer() {
-        alert('3');
-        setTimeout(function(){
-            alert('2');
-        }, 250);
-        setTimeout(function(){
-            alert('1');
-        }, 500);
-        setTimeout(function(){
-            alert('GO');
-        }, 750);
-        
-        setTimeout(function(){
-            
-            fetch('/start_timer');
-            
-            intervalElapsed = setInterval(function(){
-                refreshElapsed() // this will run after every 5 seconds
-            }, 345);
-            
-            intervalLapTimes = setInterval(function(){
-                refreshLapTimes() // this will run after every 5 seconds
-            }, 654);
-            
-            intervalCheckFinished = setInterval(function(){
-                check_finished() // this will run after every 5 seconds
-            }, 125);
-            
-        }, 750);
+
+            <div class="lapsBlock num-laps">
+                <div class="lap">{{ num_laps1 }}</div>
+                <div>Laps</div>
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="timeBlock curent-lap">
+                <div class="time timeBig">{{ formatted_current_lap_time2 }}</div>
+                <div>Current</div>
+            </div>
+
+            <div class="timeBlock last-lap">
+                <div class="time timeBig">{{ formatted_last_lap_time2 }}</div>
+                <div>Last</div>
+            </div>
+
+            <div class="timeBlock best-lap">
+                <div class="time timeBig">{{ formatted_fastest_lap_time2 }}</div>
+                <div>Fastest</div>
+            </div>
+
+            <div class="lapsBlock num-laps">
+                <div class="lap">{{ num_laps2 }}</div>
+                <div>Laps</div>
+            </div>
+        </div>
+
+    </main>
+    <footer>
+        <button onclick="startTimer()">Start Timer</button>
+        <button onclick="continueTimer()">Continue Timer</button>
+        <button onclick="stopTimer()">Stop Timer</button>
+        <button onclick="lap1()">Lap 1</button>
+        <button onclick="lap2()">Lap 2</button>
+        <button onclick="refreshValues()">Refresh</button>
+        <button onclick="reset()">Reset</button>
+    </footer>
+</div>
+
+<script>
+
+    function getRandomInt(max) {
+        return Math.floor(Math.random() * max);
     }
+
+    function startTimer() {
+        let lightsDiv = document.getElementById("startLights");
+        lights = lightsDiv.querySelectorAll(":scope > .startLight");
+
+        const rand = getRandomInt(2500);
+        for(let i = 0; i < lights.length; i++) {
+            setTimeout(function(){
+                lights[i].classList.add('redLight');
+            }, i*750);
+            setTimeout(function(){
+                lights[i].classList.add('greenLight');
+            }, ((lights.length)*750 + rand) );
+        }
+        startTimers(((lights.length)*750 + rand));
+    }
+
     function continueTimer() {
         fetch('/continue_timer');
     }
+
     function check_finished() {
         $.ajax({
             url: "/check_finished",
@@ -226,15 +224,15 @@
                 // do something
             }
         });
-        
+
     }
-    
+
     function stopTimer() {
         fetch('/stop_timer');
         refreshValues();
     }
     function reset() {
-        confirm("resetting");
+        confirm("Resetting Timer");
         fetch('/reset');
         refreshValues();
         fetch('/reset');
@@ -270,16 +268,34 @@
             }
         });
     }
-    
-    
-    
-    
-      function lap1() {
-          fetch('/lap1');
-      }
-      function lap2() {
-          fetch('/lap2');
-      }
-    </script>
-  </body>
+
+    function startTimers(when) {
+        setTimeout(function(){
+
+            fetch('/start_timer');
+
+            intervalElapsed = setInterval(function(){
+                refreshElapsed() // this will run after every 5 seconds
+            }, 345);
+
+            intervalLapTimes = setInterval(function(){
+                refreshLapTimes() // this will run after every 5 seconds
+            }, 654);
+
+            intervalCheckFinished = setInterval(function(){
+                check_finished() // this will run after every 5 seconds
+            }, 125);
+
+        }, when);
+    }
+
+
+    function lap1() {
+        fetch('/lap1');
+    }
+    function lap2() {
+        fetch('/lap2');
+    }
+</script>
+</body>
 </html>
