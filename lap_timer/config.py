@@ -1,0 +1,2 @@
+LANE1_PIN = 18
+LANE2_PIN = 23
