@@ -180,6 +180,13 @@
 </div>
 
 <script>
+    let intervalElapsed = null;
+    let intervalLapTimes = null;
+    let intervalCheckFinished = null;
+
+    function postAction(url) {
+        return fetch(url, { method: 'POST' });
+    }
 
     function getRandomInt(max) {
         return Math.floor(Math.random() * max);
@@ -202,44 +209,45 @@
     }
 
     function continueTimer() {
-        fetch('/continue_timer');
+        postAction('/continue_timer');
         startTimers(0);
     }
 
     function check_finished() {
-        $.ajax({
-            url: "/check_finished",
-            type: "get",
-            success: function(response) {
-                if(response == 'OK'){
-                    refreshLapTimes()
-                    if(intervalElapsed)
-                        clearTimeout(intervalLapTimes);
-                    if(intervalCheckFinished)
-                        clearTimeout(intervalCheckFinished);
-                    if(intervalElapsed)
-                        clearTimeout(intervalElapsed);
+        fetch('/check_finished')
+            .then(response => response.json())
+            .then(data => {
+                if (data.finished) {
+                    refreshLapTimes();
+                    if (intervalLapTimes)
+                        clearInterval(intervalLapTimes);
+                    if (intervalCheckFinished)
+                        clearInterval(intervalCheckFinished);
+                    if (intervalElapsed)
+                        clearInterval(intervalElapsed);
                 }
-            },
-            error: function(xhr) {
+            })
+            .catch(function() {
                 // do something
             }
-        });
+        );
 
     }
 
     function stopTimer() {
-        fetch('/stop_timer');
+        postAction('/stop_timer');
         refreshValues();
     }
     function reset() {
         confirm("Resetting Timer");
-        fetch('/reset');
-        refreshValues();
-        fetch('/reset');
+        postAction('/reset');
         refreshValues();
         if(null != intervalLapTimes)
-            clearTimeout(intervalLapTimes);
+            clearInterval(intervalLapTimes);
+        if(null != intervalCheckFinished)
+            clearInterval(intervalCheckFinished);
+        if(null != intervalElapsed)
+            clearInterval(intervalElapsed);
     }
     function refreshValues() {
         refreshElapsed();
@@ -273,7 +281,7 @@
     function startTimers(when) {
         setTimeout(function(){
 
-            fetch('/start_timer');
+            postAction('/start_timer');
 
             intervalElapsed = setInterval(function(){
                 refreshElapsed() // this will run after every 5 seconds
@@ -292,10 +300,10 @@
 
 
     function lap1() {
-        fetch('/lap1');
+        postAction('/lap1');
     }
     function lap2() {
-        fetch('/lap2');
+        postAction('/lap2');
     }
 </script>
 </body>
