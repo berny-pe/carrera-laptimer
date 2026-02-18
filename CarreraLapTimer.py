@@ -13,27 +13,27 @@ def index():
     template_data = lap_timer.get_template_data()
     return render_template('index.html', **template_data)
 
-@app.route('/start_timer', methods=['POST'])
+@app.route('/api/start_timer', methods=['POST'])
 def start_timer():
     lap_timer.start_timer()
     return jsonify(status='ok')
 
-@app.route('/continue_timer', methods=['POST'])
+@app.route('/api/continue_timer', methods=['POST'])
 def continue_timer():
     lap_timer.continue_timer()
     return jsonify(status='ok')
 
-@app.route('/check_finished')
+@app.route('/api/check_finished')
 def check_finished():
     finished = lap_timer.check_finished()
     return jsonify(finished=finished)
 
-@app.route('/stop_timer', methods=['POST'])
+@app.route('/api/stop_timer', methods=['POST'])
 def stop_timer():
     lap_timer.stop_timer()
     return jsonify(status='ok')
 
-@app.route('/reset', methods=['POST'])
+@app.route('/api/reset', methods=['POST'])
 def reset():
     lap_timer.reset()
     return jsonify(status='ok')
@@ -48,12 +48,12 @@ def lap_times():
     template_data = lap_timer.get_template_data()
     return render_template('lap_times.html', **template_data)
 
-@app.route('/lap1', methods=['POST'])
+@app.route('/api/lap1', methods=['POST'])
 def lap1():
     lap_timer.lap1()
     return jsonify(status='ok')
 
-@app.route('/lap2', methods=['POST'])
+@app.route('/api/lap2', methods=['POST'])
 def lap2():
     lap_timer.lap2()
     return jsonify(status='ok')

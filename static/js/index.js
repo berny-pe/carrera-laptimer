@@ -27,12 +27,12 @@ function startTimer() {
 }
 
 function continueTimer() {
-    postAction('/continue_timer');
+    postAction('/api/continue_timer');
     startTimers(0);
 }
 
 function check_finished() {
-    fetch('/check_finished')
+    fetch('/api/check_finished')
         .then(response => response.json())
         .then(data => {
             if (data.finished) {
@@ -53,12 +53,12 @@ function check_finished() {
 }
 
 function stopTimer() {
-    postAction('/stop_timer');
+    postAction('/api/stop_timer');
     refreshValues();
 }
 function reset() {
     confirm("Resetting Timer");
-    postAction('/reset');
+    postAction('/api/reset');
     refreshValues();
     if(null != intervalLapTimes)
         clearInterval(intervalLapTimes);
@@ -72,34 +72,30 @@ function refreshValues() {
     refreshLapTimes();
 }
 function refreshElapsed() {
-    $.ajax({
-        url: "/elapsed",
-        type: "get",
-        success: function(response) {
-            $("#elapsed").html(response);
-        },
-        error: function(xhr) {
+    fetch('/elapsed')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('elapsed').innerHTML = html;
+        })
+        .catch(function() {
             //Do Something to handle error
-        }
-    });
+        });
 }
 function refreshLapTimes() {
-    $.ajax({
-        url: "/lap_times",
-        type: "get",
-        success: function(response) {
-            $("#lap_times").html(response);
-        },
-        error: function(xhr) {
+    fetch('/lap_times')
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('lap_times').innerHTML = html;
+        })
+        .catch(function() {
             //Do Something to handle error
-        }
-    });
+        });
 }
 
 function startTimers(when) {
     setTimeout(function(){
 
-        postAction('/start_timer');
+        postAction('/api/start_timer');
 
         intervalElapsed = setInterval(function(){
             refreshElapsed() // this will run after every 5 seconds
@@ -118,8 +114,8 @@ function startTimers(when) {
 
 
 function lap1() {
-    postAction('/lap1');
+    postAction('/api/lap1');
 }
 function lap2() {
-    postAction('/lap2');
+    postAction('/api/lap2');
 }
