@@ -32,6 +32,27 @@ class AppRouteTests(unittest.TestCase):
         self.client.post('/api/reset')
         self.assertEqual(self.client.get('/').status_code, 200)
 
+    def test_time_mode_page_and_fragments_show_goal(self):
+        self.client.post('/api/configure', json={'mode': 'time', 'time_seconds': 300})
+        self.assertIn('Time limit 05:00:000', self.client.get('/race').get_data(as_text=True))
+        self.assertIn('Time limit 05:00:000', self.client.get('/elapsed').get_data(as_text=True))
+        self.assertIn('Remaining 05:00:000', self.client.get('/elapsed').get_data(as_text=True))
+
+    def test_lap_fragment_shows_lap_target(self):
+        self.client.post('/api/configure', json={'mode': 'laps', 'laps': 7})
+        self.assertIn('Laps / 7', self.client.get('/lap_times').get_data(as_text=True))
+
+    def test_configure_rejects_wrong_types(self):
+        for body in ({'mode': 'laps', 'laps': True}, {'mode': 'laps', 'laps': '5'},
+                     {'mode': 'time', 'time_seconds': 'abc'}, {'mode': 'time', 'time_seconds': 10**7}):
+            self.assertEqual(self.client.post('/api/configure', json=body).status_code, 400)
+        self.assertEqual(self.client.post('/api/configure', data='not json').status_code, 400)
+        self.assertFalse(app_module.lap_timer.configured)
+
+    def test_check_finished_route(self):
+        self.client.post('/api/configure', json={'mode': 'laps', 'laps': 1})
+        self.assertFalse(self.client.get('/api/check_finished').get_json()['finished'])
+
 
 if __name__ == '__main__':
     unittest.main()

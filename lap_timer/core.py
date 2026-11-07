@@ -139,11 +139,12 @@ class LapTimer:
         if not self.timer_running or self._reached_target(lane):
             lane.finished = True
 
-        if self.lane1.finished and self.lane2.finished and self.mode is not None:
-            if self.timer_running:
-                self.elapsed_time = now - self.start_time - self.paused
-                self.last_active_time = now
-                self.timer_running = False
+        # all lanes reached the lap target while racing: the race is over.
+        # (After a manual stop or a time-up there is nothing left to end.)
+        if self.lane1.finished and self.lane2.finished and self.timer_running:
+            self.elapsed_time = now - self.start_time - self.paused
+            self.last_active_time = now
+            self.timer_running = False
             self.ended = True
 
     def lap_callback1(self, channel=None):

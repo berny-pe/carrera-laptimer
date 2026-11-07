@@ -203,6 +203,82 @@ class RaceModeTests(unittest.TestCase):
         self.assertEqual(timer.lane1.num_laps, 1)
         self.assertEqual(timer.lane2.num_laps, 1)
 
+    def test_manual_stop_in_configured_race_can_still_be_continued(self):
+        timer = self._started(mode='laps', laps=10)
+        with patch('lap_timer.core.time.time', side_effect=[110.0, 110.0]):
+            timer.stop_timer()
+        self._lap(timer, 1, 111.0)
+        self._lap(timer, 2, 112.0)
+        self.assertTrue(timer.check_finished())
+        self.assertFalse(timer.ended)
+
+        with patch('lap_timer.core.time.time', return_value=120.0):
+            timer.continue_timer()
+        self.assertTrue(timer.timer_running)
+        self.assertFalse(timer.lane1.finished)
+
+    def test_continue_keeps_lane_that_reached_target_finished(self):
+        timer = self._started(mode='laps', laps=1)
+        self._lap(timer, 1, 105.0)
+        with patch('lap_timer.core.time.time', side_effect=[106.0, 106.0]):
+            timer.stop_timer()
+        with patch('lap_timer.core.time.time', return_value=110.0):
+            timer.continue_timer()
+        self.assertTrue(timer.lane1.finished)
+        self.assertFalse(timer.lane2.finished)
+        self._lap(timer, 1, 120.0)
+        self.assertEqual(timer.lane1.num_laps, 1)
+
+    def test_time_limit_boundary_and_remaining_time(self):
+        timer = self._started(mode='time', time_seconds=60)
+        with patch('lap_timer.core.time.time', return_value=140.0):
+            self.assertEqual(timer.get_template_data()['formatted_remaining'], '00:20:000')
+        with patch('lap_timer.core.time.time', return_value=159.9):
+            timer.check_finished()
+        self.assertTrue(timer.timer_running)
+        with patch('lap_timer.core.time.time', return_value=160.0):
+            data = timer.get_template_data()
+        self.assertTrue(timer.ended)
+        self.assertEqual(data['formatted_remaining'], '00:00:000')
+
+    def test_status_text_progression_in_time_race(self):
+        timer = self._started(mode='time', time_seconds=10)
+        self._lap(timer, 1, 105.0)
+        with patch('lap_timer.core.time.time', return_value=106.0):
+            self.assertEqual(timer.get_template_data()['status_text'], '')
+        with patch('lap_timer.core.time.time', return_value=115.0):
+            timer.check_finished()
+            self.assertEqual(timer.get_template_data()['status_text'], 'Time is up - finish your lap')
+        self._lap(timer, 1, 120.0)
+        self._lap(timer, 2, 121.0)
+        with patch('lap_timer.core.time.time', return_value=122.0):
+            self.assertEqual(timer.get_template_data()['status_text'], 'Race finished - winner: Lane 1')
+
+    def test_crossing_after_time_up_inside_min_lap_window_is_ignored(self):
+        timer = self._started(mode='time', time_seconds=60)
+        self._lap(timer, 1, 159.5)
+        self._lap(timer, 1, 160.2)  # after the limit but a bounce of the previous crossing
+        self.assertEqual(timer.lane1.num_laps, 1)
+        self.assertFalse(timer.lane1.finished)
+
+    def test_winner_undecided_without_laps_and_exact_tie(self):
+        timer = self._started(mode='laps', laps=1)
+        self.assertIsNone(timer._winner())
+        timer.lane1.finished = timer.lane2.finished = True
+        self.assertIsNone(timer._winner())
+        timer.lane1.num_laps = timer.lane2.num_laps = 1
+        timer.lane1.last_total_time = timer.lane2.last_total_time = 105.0
+        self.assertEqual(timer._winner(), 0)
+
+    def test_configure_rejects_bool_float_laps_and_accepts_float_seconds(self):
+        timer = LapTimer()
+        for laps in (True, 2.5, None):
+            with self.assertRaises(ValueError):
+                timer.configure('laps', laps=laps)
+        timer.configure('time', time_seconds=90.5)
+        self.assertEqual(timer.time_limit, 90.5)
+        self.assertIsNone(timer.target_laps)
+
     def test_free_mode_unchanged(self):
         timer = LapTimer()
         with patch('lap_timer.core.time.time', return_value=100.0):
