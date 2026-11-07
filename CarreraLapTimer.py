@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from lap_timer.core import LapTimer
 from lap_timer.gpio_adapter import GPIOLapSensor
 
@@ -9,12 +9,33 @@ gpio_sensor = GPIOLapSensor()
 gpio_sensor.setup(lap_timer)
 
 @app.route('/')
-def index():
+def setup():
+    if lap_timer.configured:
+        return redirect(url_for('race'))
+    return render_template('setup.html')
+
+
+@app.route('/race')
+def race():
+    if not lap_timer.configured:
+        return redirect(url_for('setup'))
     template_data = lap_timer.get_template_data()
     return render_template('index.html', **template_data)
 
+
+@app.route('/api/configure', methods=['POST'])
+def configure():
+    data = request.get_json(silent=True) or {}
+    try:
+        lap_timer.configure(data.get('mode'), laps=data.get('laps'), time_seconds=data.get('time_seconds'))
+    except ValueError as err:
+        return jsonify(status='error', error=str(err)), 400
+    return jsonify(status='ok')
+
 @app.route('/api/start_timer', methods=['POST'])
 def start_timer():
+    if not lap_timer.configured:
+        return jsonify(status='error', error='configure the race first'), 409
     lap_timer.start_timer()
     return jsonify(status='ok')
 

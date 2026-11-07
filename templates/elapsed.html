@@ -1,5 +1,6 @@
-
-                <div class="block">
-                    <div class="time timeBig">{{ formatted_time }}</div>
-                    <div>Total Race Time</div>
-                </div>
+<div class="block">
+    <div class="time timeBig">{{ formatted_time }}</div>
+    <div>Total Race Time</div>
+    {% if goal_text %}<div class="raceGoal">{{ goal_text }}{% if formatted_remaining %} &middot; Remaining {{ formatted_remaining }}{% endif %}</div>{% endif %}
+    {% if status_text %}<div class="raceStatus">{{ status_text }}</div>{% endif %}
+</div>

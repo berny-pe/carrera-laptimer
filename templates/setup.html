@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lap Timer - New Race</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+</head>
+<body class="setup-page">
+
+<form id="setupForm" class="setup-card">
+    <h1>New Race</h1>
+
+    <div class="modeChoice">
+        <input type="radio" id="modeLaps" name="mode" value="laps" checked>
+        <label for="modeLaps">Number of laps</label>
+        <input type="radio" id="modeTime" name="mode" value="time">
+        <label for="modeTime">Race time</label>
+    </div>
+
+    <div id="lapsField" class="field">
+        <label for="laps">Laps</label>
+        <input type="number" id="laps" min="1" max="999" step="1" value="10" inputmode="numeric">
+    </div>
+
+    <div id="timeField" class="field" hidden>
+        <label for="minutes">Minutes</label>
+        <input type="number" id="minutes" min="1" max="240" step="1" value="5" inputmode="numeric">
+    </div>
+
+    <div id="setupError" class="setupError" role="alert"></div>
+    <button type="submit" class="primary">Go to race</button>
+</form>
+
+<script src="{{ url_for('static', filename='js/setup.js') }}"></script>
+</body>
+</html>

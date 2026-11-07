@@ -57,15 +57,17 @@ function stopTimer() {
     refreshValues();
 }
 function reset() {
-    confirm("Resetting Timer");
-    postAction('/api/reset');
-    refreshValues();
+    if (!confirm("Reset the race and go back to race setup?"))
+        return;
     if(null != intervalLapTimes)
         clearInterval(intervalLapTimes);
     if(null != intervalCheckFinished)
         clearInterval(intervalCheckFinished);
     if(null != intervalElapsed)
         clearInterval(intervalElapsed);
+    postAction('/api/reset').then(function() {
+        window.location.href = '/';
+    });
 }
 function refreshValues() {
     refreshElapsed();

@@ -93,3 +93,66 @@ main > div:last-child{
 .greenLight{
     background-color: lawngreen;
 }
+
+.raceGoal, .raceStatus {
+    font-size: 0.9em;
+    margin-top: 0.3em;
+}
+.raceStatus {
+    font-weight: bold;
+}
+
+/* setup screen */
+.setup-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+.setup-card {
+    width: min(90vw, 480px);
+    text-align: center;
+}
+.setup-card h1 {
+    margin: 0 0 1em;
+}
+.modeChoice {
+    display: flex;
+    margin-bottom: 1.5em;
+}
+.modeChoice input {
+    position: absolute;
+    opacity: 0;
+}
+.modeChoice label {
+    flex: 1;
+    padding: 1.2em 0.5em;
+    background-color: #222;
+    cursor: pointer;
+}
+.modeChoice input:checked + label {
+    background-color: blue;
+}
+.field {
+    margin-bottom: 1.5em;
+}
+.field label {
+    display: block;
+    margin-bottom: 0.5em;
+}
+.field input {
+    width: 6em;
+    font-size: 3em;
+    text-align: center;
+    font-family: 'Inconsolata', monospace;
+}
+.setupError {
+    min-height: 1.5em;
+    color: #ff6b6b;
+}
+.setup-card button.primary {
+    width: 100%;
+    margin: 0;
+    font-size: 1.2em;
+}
