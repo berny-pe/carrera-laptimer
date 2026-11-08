@@ -1,7 +1,7 @@
-# carrera-laptimer
+# Slotcar Laptimer
 
-Lightweight analog lap timer for slotcar racing on Raspberry Pi.
-The app reads lane signals via GPIO and exposes a small Flask web UI that can be opened on an iPad for interactive racing.
+Lightweight analog lap timer for slotcar racing simply on a Raspberry Pi and a tablet.
+The app reads lane signals via GPIO and exposes a small Flask web UI that can be opened on an iPad or any other tablet for interactive racing.
 2 racemodes are supported:
 - number of laps to race
 - race duration
