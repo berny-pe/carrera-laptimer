@@ -8,10 +8,11 @@ The app reads lane signals via GPIO and exposes a small Flask web UI that can be
 
 ## refactored architecture
 
-- `CarreraLapTimer.py`: Flask entrypoint and route wiring
+- `SlotcarLapTimer.py`: Flask entrypoint and route wiring
 - `lap_timer/core.py`: pure timing and lap domain logic (`LapTimer`, `LaneState`)
 - `lap_timer/gpio_adapter.py`: GPIO integration and callback registration
-- `lap_timer/config.py`: central pin configuration
+- `lap_timer/config.py`: constants (`LANE_PINS` = one GPIO pin per lane; its length is the lane count)
+- `lap_timer/lanes.py`: resolves the lane pins, including the `SLOT_LANE_PINS` env override
 - `templates/`: server-rendered HTML fragments and page template
 - `static/css/index.css`: extracted page styling
 - `static/js/index.js`: extracted frontend interaction logic
@@ -27,13 +28,12 @@ The app reads lane signals via GPIO and exposes a small Flask web UI that can be
 
 ### api routes (json)
 
-- `POST /api/configure`: `{"mode": "laps", "laps": 10}` or `{"mode": "time", "time_seconds": 300}`; only before the race starts
+- `POST /api/configure`: `{"mode": "laps", "laps": 10}` or `{"mode": "time", "time_seconds": 300}`, each optionally with `"lanes": [1, 3]` to pick the participating lanes (default: all); only before the race starts
 - `POST /api/start_timer` (409 until configured)
 - `POST /api/continue_timer`
 - `POST /api/stop_timer`
 - `POST /api/reset`
-- `POST /api/lap1`
-- `POST /api/lap2`
+- `POST /api/lap/<lane>` (1-based; `/api/lap1` and `/api/lap2` remain as aliases)
 - `GET /api/check_finished`
 
 ## race modes
@@ -42,17 +42,31 @@ After opening the app (or after a reset) the setup screen asks for either a
 number of laps or a race time.
 
 - **Laps:** a lane finishes when it completes the target laps; the race ends
-  when both lanes are finished. Winner = first to finish.
+  when all participating lanes are finished. Winner = first to finish.
 - **Time:** the clock stops at the limit; each lane finishes on its next
   line crossing (that lap still counts). Winner = most laps, ties go to the
   car that crossed the line first.
 
 Reset returns to the setup screen.
 
+## lanes
+
+The lane count comes from `LANE_PINS` in `lap_timer/config.py` (currently 2 lanes
+on BCM pins 18 and 23; a commented-out 4-lane line with pins 24 and 25 is
+included - adjust to your wiring). To override it without editing code:
+
+```bash
+SLOT_LANE_PINS="18,23,24,25" python SlotcarLapTimer.py   # 4-lane track
+```
+
+The setup screen lets you choose which lanes take part, so a 4-lane track can
+run a 2-car race. Lanes that are not selected are hidden and ignored.
+A race ends when every participating lane has finished.
+
 ## run
 
 ```bash
-python CarreraLapTimer.py
+python SlotcarLapTimer.py
 ```
 
 ## tests

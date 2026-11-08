@@ -1,43 +1,24 @@
-            <div class="flex-container" id="lane1">
-                <div class="timeBlock curent-lap">
-                    <div class="time timeBig">{{ formatted_current_lap_time1 }}</div>
-                    <div>Current</div>
-                </div>
-                
-                <div class="timeBlock last-lap">
-                    <div class="time timeBig">{{ formatted_last_lap_time1 }}</div>
-                    <div>Last</div>
-                </div>
-                
-                <div class="timeBlock best-lap">
-                    <div class="time timeBig">{{ formatted_fastest_lap_time1 }}</div>
-                    <div>Fastest</div>
-                </div>
-                
-                <div class="lapsBlock num-laps">
-                    <div class="lap">{{ num_laps1 }}</div>
-                    <div>Laps{{ lap_goal }}</div>
-                </div>
-            </div>
-            
-            <div class="flex-container">
-                <div class="timeBlock curent-lap">
-                    <div class="time timeBig">{{ formatted_current_lap_time2 }}</div>
-                    <div>Current</div>
-                </div>
-                
-                <div class="timeBlock last-lap">
-                    <div class="time timeBig">{{ formatted_last_lap_time2 }}</div>
-                    <div>Last</div>
-                </div>
-                
-                <div class="timeBlock best-lap">
-                    <div class="time timeBig">{{ formatted_fastest_lap_time2 }}</div>
-                    <div>Fastest</div>
-                </div>
-                
-                <div class="lapsBlock num-laps">
-                    <div class="lap">{{ num_laps2 }}</div>
-                    <div>Laps{{ lap_goal }}</div>
-                </div>
-            </div>
+{% for lane in lanes %}
+<div class="flex-container lane lane-{{ lane.number }}">
+    <div class="laneName">{{ lane.number }}</div>
+    <div class="timeBlock curent-lap">
+        <div class="time timeBig">{{ lane.formatted_current_lap_time }}</div>
+        <div>Current</div>
+    </div>
+
+    <div class="timeBlock last-lap">
+        <div class="time timeBig">{{ lane.formatted_last_lap_time }}</div>
+        <div>Last</div>
+    </div>
+
+    <div class="timeBlock best-lap">
+        <div class="time timeBig">{{ lane.formatted_fastest_lap_time }}</div>
+        <div>Fastest</div>
+    </div>
+
+    <div class="lapsBlock num-laps">
+        <div class="lap">{{ lane.num_laps }}</div>
+        <div>Laps{{ lap_goal }}</div>
+    </div>
+</div>
+{% endfor %}

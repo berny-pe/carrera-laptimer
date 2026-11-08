@@ -7,7 +7,7 @@ from lap_timer.core import LapTimer
 
 class LapTimerCoreTests(unittest.TestCase):
     def test_initial_state_after_reset(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
 
         self.assertFalse(timer.timer_running)
         self.assertIsNone(timer.start_time)
@@ -16,7 +16,7 @@ class LapTimerCoreTests(unittest.TestCase):
         self.assertFalse(timer.check_finished())
 
     def test_start_and_elapsed_time(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
 
         with patch('lap_timer.core.time.time', return_value=100.0):
             timer.start_timer()
@@ -28,7 +28,7 @@ class LapTimerCoreTests(unittest.TestCase):
         self.assertAlmostEqual(elapsed, 4.5, places=3)
 
     def test_lane_laps_and_fastest_lap_tracking(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
 
         with patch('lap_timer.core.time.time', return_value=50.0):
             timer.start_timer()
@@ -44,7 +44,7 @@ class LapTimerCoreTests(unittest.TestCase):
         self.assertAlmostEqual(timer.lane1.fastest_lap_time, 4.0, places=3)
 
     def test_stop_continue_accounts_for_pause_duration(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
 
         with patch('lap_timer.core.time.time', return_value=10.0):
             timer.start_timer()
@@ -63,7 +63,7 @@ class LapTimerCoreTests(unittest.TestCase):
         self.assertAlmostEqual(elapsed, 10.0, places=3)
 
     def test_finished_when_both_lanes_marked_after_stop(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
 
         with patch('lap_timer.core.time.time', return_value=100.0):
             timer.start_timer()
@@ -84,7 +84,7 @@ class LapTimerCoreTests(unittest.TestCase):
 
 class RaceModeTests(unittest.TestCase):
     def _started(self, **config):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
         timer.configure(**config)
         with patch('lap_timer.core.time.time', return_value=100.0):
             timer.start_timer()
@@ -95,7 +95,7 @@ class RaceModeTests(unittest.TestCase):
             (timer.lap_callback1 if lane == 1 else timer.lap_callback2)()
 
     def test_configure_validation(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
         for kwargs in ({'mode': 'bogus'}, {'mode': 'laps'}, {'mode': 'laps', 'laps': 0},
                        {'mode': 'laps', 'laps': '5'}, {'mode': 'time', 'time_seconds': 0},
                        {'mode': 'time'}):
@@ -271,7 +271,7 @@ class RaceModeTests(unittest.TestCase):
         self.assertEqual(timer._winner(), 0)
 
     def test_configure_rejects_bool_float_laps_and_accepts_float_seconds(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
         for laps in (True, 2.5, None):
             with self.assertRaises(ValueError):
                 timer.configure('laps', laps=laps)
@@ -280,7 +280,7 @@ class RaceModeTests(unittest.TestCase):
         self.assertIsNone(timer.target_laps)
 
     def test_free_mode_unchanged(self):
-        timer = LapTimer()
+        timer = LapTimer(num_lanes=2)
         with patch('lap_timer.core.time.time', return_value=100.0):
             timer.start_timer()
         for i in range(5):
@@ -295,6 +295,102 @@ class RaceModeTests(unittest.TestCase):
         self.assertIsNotNone(data['formatted_remaining'])
         timer2 = self._started(mode='laps', laps=7)
         self.assertEqual(timer2.get_template_data()['lap_goal'], ' / 7')
+
+
+class MultiLaneTests(unittest.TestCase):
+    def _started(self, num_lanes=4, **config):
+        timer = LapTimer(num_lanes=num_lanes)
+        timer.configure(**config)
+        with patch('lap_timer.core.time.time', return_value=100.0):
+            timer.start_timer()
+        return timer
+
+    def _lap(self, timer, lane, at):
+        with patch('lap_timer.core.time.time', return_value=at):
+            timer.lap_callback(lane)
+
+    def test_default_lane_count_comes_from_config(self):
+        from lap_timer.lanes import lane_pins
+        self.assertEqual(len(LapTimer().lanes), len(lane_pins()))
+
+    def test_env_override_and_validation(self):
+        from lap_timer.lanes import lane_pins
+        with patch.dict('os.environ', {'SLOT_LANE_PINS': '5, 6'}):
+            self.assertEqual(lane_pins(), [5, 6])
+            self.assertEqual(len(LapTimer().lanes), 2)
+        for bad in (',', '5,5', 'x'):
+            with patch.dict('os.environ', {'SLOT_LANE_PINS': bad}):
+                with self.assertRaises(ValueError):
+                    lane_pins()
+
+    def test_invalid_lane_count(self):
+        for bad in (0, -1, 'x', True):
+            with self.assertRaises(ValueError):
+                LapTimer(num_lanes=bad)
+
+    def test_race_ends_only_when_all_four_lanes_finished(self):
+        timer = self._started(mode='laps', laps=1)
+        for lane, at in ((1, 110.0), (2, 111.0), (3, 112.0)):
+            self._lap(timer, lane, at)
+            self.assertFalse(timer.check_finished())
+        self._lap(timer, 4, 113.0)
+        self.assertTrue(timer.check_finished())
+        self.assertTrue(timer.ended)
+        self.assertEqual(timer._winner(), 1)
+
+    def test_winner_is_not_limited_to_first_two_lanes(self):
+        timer = self._started(mode='laps', laps=2)
+        for lane, at in ((3, 110.0), (3, 115.0), (1, 120.0), (1, 125.0),
+                         (2, 130.0), (2, 135.0), (4, 140.0), (4, 145.0)):
+            self._lap(timer, lane, at)
+        self.assertEqual(timer._winner(), 3)
+        self.assertEqual(timer.get_template_data()['status_text'], 'Race finished - winner: Lane 3')
+
+    def test_time_race_ranks_by_laps_then_first_crossing(self):
+        timer = self._started(mode='time', time_seconds=60)
+        for lane, at in ((4, 110.0), (4, 120.0), (2, 125.0), (2, 130.0), (1, 135.0)):
+            self._lap(timer, lane, at)
+        for lane, at in ((1, 165.0), (2, 166.0), (3, 167.0), (4, 168.0)):
+            self._lap(timer, lane, at)
+        self.assertTrue(timer.check_finished())
+        # lanes 2 and 4 both have 3 laps, lane 2 crossed first
+        self.assertEqual(timer._winner(), 2)
+
+    def test_inactive_lanes_do_not_block_the_race(self):
+        timer = self._started(mode='laps', laps=1, lanes=[2, 4])
+        self._lap(timer, 1, 110.0)  # inactive: ignored
+        self.assertEqual(timer.lanes[0].num_laps, 0)
+        self._lap(timer, 4, 111.0)
+        self.assertFalse(timer.check_finished())
+        self._lap(timer, 2, 112.0)
+        self.assertTrue(timer.check_finished())
+        self.assertEqual(timer._winner(), 4)
+
+    def test_template_data_lists_only_active_lanes(self):
+        timer = self._started(mode='laps', laps=3, lanes=[1, 3])
+        self.assertEqual([l['number'] for l in timer.get_template_data()['lanes']], [1, 3])
+
+    def test_lane_validation(self):
+        timer = LapTimer(num_lanes=4)
+        for lanes in ([], [0], [5], ['1'], [True], 'all', 3):
+            with self.assertRaises(ValueError):
+                timer.configure('laps', laps=3, lanes=lanes)
+        self.assertFalse(timer.configured)
+
+    def test_unknown_lane_callback_rejected(self):
+        timer = LapTimer(num_lanes=4)
+        for lane in (0, 5, 'x'):
+            with self.assertRaises(ValueError):
+                timer.lap_callback(lane)
+
+    def test_continue_keeps_each_lane_that_reached_target_finished(self):
+        timer = self._started(mode='laps', laps=1)
+        self._lap(timer, 3, 110.0)
+        with patch('lap_timer.core.time.time', side_effect=[111.0, 111.0]):
+            timer.stop_timer()
+        with patch('lap_timer.core.time.time', return_value=115.0):
+            timer.continue_timer()
+        self.assertEqual([l.finished for l in timer.lanes], [False, False, True, False])
 
 
 if __name__ == '__main__':

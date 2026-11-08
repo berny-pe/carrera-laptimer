@@ -30,9 +30,8 @@
         <button onclick="startTimer()">Start Timer</button>
         <button onclick="continueTimer()">Continue Timer</button>
         <button onclick="stopTimer()">Stop Timer</button>
-        <button onclick="lap1()">Lap 1</button>
-        <button onclick="lap2()">Lap 2</button>
-        <button onclick="refreshValues()">Refresh</button>
+        {% for lane in lanes %}<button onclick="lap({{ lane.number }})">Lap {{ lane.number }}</button>
+        {% endfor %}        <button onclick="refreshValues()">Refresh</button>
         <button onclick="reset()">Reset</button>
     </footer>
 </div>

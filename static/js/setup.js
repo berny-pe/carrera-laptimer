@@ -27,6 +27,16 @@ form.addEventListener('submit', function (event) {
         payload.time_seconds = Math.round(parseFloat(document.getElementById('minutes').value) * 60);
     }
 
+    const laneBoxes = form.querySelectorAll('input[name="lane"]');
+    if (laneBoxes.length) {
+        payload.lanes = Array.from(laneBoxes).filter(function (b) { return b.checked; })
+            .map(function (b) { return parseInt(b.value, 10); });
+        if (!payload.lanes.length) {
+            errorBox.textContent = 'Select at least one lane';
+            return;
+        }
+    }
+
     fetch('/api/configure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -12,7 +12,7 @@ gpio_sensor.setup(lap_timer)
 def setup():
     if lap_timer.configured:
         return redirect(url_for('race'))
-    return render_template('setup.html')
+    return render_template('setup.html', num_lanes=lap_timer.num_lanes)
 
 
 @app.route('/race')
@@ -27,7 +27,8 @@ def race():
 def configure():
     data = request.get_json(silent=True) or {}
     try:
-        lap_timer.configure(data.get('mode'), laps=data.get('laps'), time_seconds=data.get('time_seconds'))
+        lap_timer.configure(data.get('mode'), laps=data.get('laps'), time_seconds=data.get('time_seconds'),
+                             lanes=data.get('lanes'))
     except ValueError as err:
         return jsonify(status='error', error=str(err)), 400
     return jsonify(status='ok')
@@ -69,15 +70,23 @@ def lap_times():
     template_data = lap_timer.get_template_data()
     return render_template('lap_times.html', **template_data)
 
+@app.route('/api/lap/<int:lane>', methods=['POST'])
+def lap(lane):
+    try:
+        lap_timer.lap(lane)
+    except ValueError as err:
+        return jsonify(status='error', error=str(err)), 404
+    return jsonify(status='ok')
+
+
+# legacy 2-lane endpoints
 @app.route('/api/lap1', methods=['POST'])
 def lap1():
-    lap_timer.lap1()
-    return jsonify(status='ok')
+    return lap(1)
 
 @app.route('/api/lap2', methods=['POST'])
 def lap2():
-    lap_timer.lap2()
-    return jsonify(status='ok')
+    return lap(2)
 
 
 if __name__ == '__main__':

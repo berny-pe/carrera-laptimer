@@ -115,9 +115,6 @@ function startTimers(when) {
 }
 
 
-function lap1() {
-    postAction('/api/lap1');
-}
-function lap2() {
-    postAction('/api/lap2');
+function lap(lane) {
+    postAction('/api/lap/' + lane);
 }

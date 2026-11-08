@@ -27,6 +27,15 @@
         <input type="number" id="minutes" min="1" max="240" step="1" value="5" inputmode="numeric">
     </div>
 
+    {% if num_lanes > 1 %}
+    <fieldset id="laneField" class="field laneChoice">
+        <legend>Lanes</legend>
+        {% for n in range(1, num_lanes + 1) %}
+        <label><input type="checkbox" name="lane" value="{{ n }}" checked> {{ n }}</label>
+        {% endfor %}
+    </fieldset>
+    {% endif %}
+
     <div id="setupError" class="setupError" role="alert"></div>
     <button type="submit" class="primary">Go to race</button>
 </form>

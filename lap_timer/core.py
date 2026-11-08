@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from threading import Lock
 
 from .config import MIN_LAP_SECONDS
+from .lanes import lane_pins
 
 
 @dataclass
@@ -13,6 +14,8 @@ class LaneState:
     last_lap_time: float | None = None
     fastest_lap_time: float | None = None
     num_laps: int = 0
+    # inactive lanes take no part in the race: laps are ignored, not displayed
+    active: bool = True
 
 
 MODE_LAPS = 'laps'
@@ -22,9 +25,23 @@ MAX_TIME_SECONDS = 4 * 3600
 
 
 class LapTimer:
-    def __init__(self):
+    def __init__(self, num_lanes=None):
+        self.num_lanes = len(lane_pins()) if num_lanes is None else num_lanes
+        if not isinstance(self.num_lanes, int) or isinstance(self.num_lanes, bool) or self.num_lanes < 1:
+            raise ValueError('num_lanes must be a positive integer')
         self._lock = Lock()
         self.reset()
+
+    @property
+    def lane1(self):
+        return self.lanes[0]
+
+    @property
+    def lane2(self):
+        return self.lanes[1]
+
+    def _active_lanes(self):
+        return [lane for lane in self.lanes if lane.active]
 
     def reset(self):
         with self._lock:
@@ -33,8 +50,7 @@ class LapTimer:
             self.last_active_time = None
             self.paused = 0.0
             self.elapsed_time = None
-            self.lane1 = LaneState()
-            self.lane2 = LaneState()
+            self.lanes = [LaneState() for _ in range(self.num_lanes)]
             # race configuration: mode None means a free-running timer
             self.mode = None
             self.target_laps = None
@@ -46,11 +62,12 @@ class LapTimer:
     def configured(self):
         return self.mode is not None
 
-    def configure(self, mode, laps=None, time_seconds=None):
+    def configure(self, mode, laps=None, time_seconds=None, lanes=None):
         """Select the race condition. Only allowed before the race has started."""
         with self._lock:
             if self.start_time is not None:
                 raise ValueError('race already started, reset first')
+            active = self._validate_lanes(lanes)
             if mode == MODE_LAPS:
                 if not isinstance(laps, int) or isinstance(laps, bool) or not 1 <= laps <= MAX_LAPS:
                     raise ValueError(f'laps must be an integer between 1 and {MAX_LAPS}')
@@ -63,6 +80,18 @@ class LapTimer:
             else:
                 raise ValueError("mode must be 'laps' or 'time'")
             self.mode = mode
+            for number, lane in enumerate(self.lanes, start=1):
+                lane.active = number in active
+
+    def _validate_lanes(self, lanes):
+        """Set of participating lane numbers (1-based); None means all lanes."""
+        if lanes is None:
+            return set(range(1, self.num_lanes + 1))
+        if (not isinstance(lanes, (list, tuple, set)) or not lanes
+                or any(not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= self.num_lanes
+                       for n in lanes)):
+            raise ValueError(f'lanes must be a non-empty list of lane numbers between 1 and {self.num_lanes}')
+        return set(lanes)
 
     def _reached_target(self, lane: LaneState):
         return self.mode == MODE_LAPS and lane.num_laps >= self.target_laps
@@ -84,8 +113,8 @@ class LapTimer:
                 self.start_time = time.time()
                 self.last_active_time = None
                 self.paused = 0.0
-                self.lane1.finished = self._reached_target(self.lane1)
-                self.lane2.finished = self._reached_target(self.lane2)
+                for lane in self.lanes:
+                    lane.finished = self._reached_target(lane)
 
     def continue_timer(self):
         with self._lock:
@@ -93,8 +122,8 @@ class LapTimer:
                     and self.start_time is not None and self.last_active_time is not None):
                 self.timer_running = True
                 self.paused += time.time() - self.last_active_time
-                self.lane1.finished = self._reached_target(self.lane1)
-                self.lane2.finished = self._reached_target(self.lane2)
+                for lane in self.lanes:
+                    lane.finished = self._reached_target(lane)
 
     def stop_timer(self):
         with self._lock:
@@ -111,7 +140,7 @@ class LapTimer:
         return self.elapsed_time
 
     def _register_lap(self, lane: LaneState):
-        if lane.finished:
+        if lane.finished or not lane.active:
             return
 
         if self.start_time is None:
@@ -141,19 +170,24 @@ class LapTimer:
 
         # all lanes reached the lap target while racing: the race is over.
         # (After a manual stop or a time-up there is nothing left to end.)
-        if self.lane1.finished and self.lane2.finished and self.timer_running:
+        if self.timer_running and all(l.finished for l in self._active_lanes()):
             self.elapsed_time = now - self.start_time - self.paused
             self.last_active_time = now
             self.timer_running = False
             self.ended = True
 
-    def lap_callback1(self, channel=None):
+    def lap_callback(self, lane_number, channel=None):
+        """Register a line crossing on a lane (1-based number)."""
+        if not isinstance(lane_number, int) or not 1 <= lane_number <= self.num_lanes:
+            raise ValueError(f'lane must be between 1 and {self.num_lanes}')
         with self._lock:
-            self._register_lap(self.lane1)
+            self._register_lap(self.lanes[lane_number - 1])
+
+    def lap_callback1(self, channel=None):
+        self.lap_callback(1, channel)
 
     def lap_callback2(self, channel=None):
-        with self._lock:
-            self._register_lap(self.lane2)
+        self.lap_callback(2, channel)
 
     def get_current_lap_times(self):
         with self._lock:
@@ -161,27 +195,18 @@ class LapTimer:
                 return
 
             now = time.time()
-
-            if not self.lane1.finished:
-                if self.lane1.last_total_time is None:
-                    self.lane1.lap_time = now - self.start_time
+            for lane in self._active_lanes():
+                if lane.finished:
+                    lane.lap_time = None
+                elif lane.last_total_time is None:
+                    lane.lap_time = now - self.start_time
                 else:
-                    self.lane1.lap_time = now - self.lane1.last_total_time
-            else:
-                self.lane1.lap_time = None
-
-            if not self.lane2.finished:
-                if self.lane2.last_total_time is None:
-                    self.lane2.lap_time = now - self.start_time
-                else:
-                    self.lane2.lap_time = now - self.lane2.last_total_time
-            else:
-                self.lane2.lap_time = None
+                    lane.lap_time = now - lane.last_total_time
 
     def check_finished(self):
         with self._lock:
             self._expire_if_needed(time.time())
-            return self.lane1.finished and self.lane2.finished
+            return all(lane.finished for lane in self._active_lanes())
 
     @staticmethod
     def get_formatted_time(lap_time):
@@ -194,15 +219,19 @@ class LapTimer:
         return '{:02d}:{:02d}:{:03d}'.format(minutes, seconds, thousands)
 
     def _winner(self):
-        """Lane number (1/2) of the winner, 0 for a tie, None while undecided."""
-        l1, l2 = self.lane1, self.lane2
-        if not (l1.finished and l2.finished) or (l1.num_laps == 0 and l2.num_laps == 0):
+        """Lane number of the winner, 0 for a tie, None while undecided.
+
+        Ranking: most laps, then the lane that crossed the line first.
+        """
+        lanes = [(n, l) for n, l in enumerate(self.lanes, start=1) if l.active]
+        if not all(l.finished for _, l in lanes) or all(l.num_laps == 0 for _, l in lanes):
             return None
-        if l1.num_laps != l2.num_laps:
-            return 1 if l1.num_laps > l2.num_laps else 2
-        if l1.last_total_time == l2.last_total_time:
+        ranked = sorted((x for x in lanes if x[1].num_laps > 0),
+                        key=lambda x: (-x[1].num_laps, x[1].last_total_time))
+        if (len(ranked) > 1 and ranked[0][1].num_laps == ranked[1][1].num_laps
+                and ranked[0][1].last_total_time == ranked[1][1].last_total_time):
             return 0
-        return 1 if l1.last_total_time < l2.last_total_time else 2
+        return ranked[0][0]
 
     def _race_info(self):
         """Race goal and status for the templates. Caller holds the lock."""
@@ -231,61 +260,38 @@ class LapTimer:
                 formatted_time = self.get_formatted_time(self.elapsed_timer())
             return {'formatted_time': formatted_time, **self._race_info()}
 
-    def lap1(self):
-        self.lap_callback1()
-
-    def lap2(self):
-        self.lap_callback2()
+    def lap(self, lane_number):
+        self.lap_callback(lane_number)
 
     def get_template_data(self):
         self.get_current_lap_times()
 
         with self._lock:
-            formatted_time = '00:00:000'
-            formatted_current_lap_time1 = '00:00:000'
-            formatted_current_lap_time2 = '00:00:000'
-
+            zero = self.get_formatted_time(None)
+            formatted_time = zero
             if self.start_time is not None:
                 formatted_time = self.get_formatted_time(self.elapsed_timer())
-                if self.lane1.last_lap_time is not None:
-                    formatted_current_lap_time1 = self.get_formatted_time(self.lane1.lap_time)
+
+            lanes = []
+            for number, lane in enumerate(self.lanes, start=1):
+                if not lane.active:
+                    continue
+                if self.start_time is None:
+                    current = zero
+                elif lane.last_lap_time is not None:
+                    current = self.get_formatted_time(lane.lap_time)
                 else:
-                    formatted_current_lap_time1 = formatted_time
-
-                if self.lane2.last_lap_time is not None:
-                    formatted_current_lap_time2 = self.get_formatted_time(self.lane2.lap_time)
-                else:
-                    formatted_current_lap_time2 = formatted_time
-
-            if self.lane1.last_lap_time is not None:
-                formatted_last_lap_time1 = self.get_formatted_time(self.lane1.last_lap_time)
-            else:
-                formatted_last_lap_time1 = '00:00:000'
-
-            if self.lane1.fastest_lap_time is not None:
-                formatted_fastest_lap_time1 = self.get_formatted_time(self.lane1.fastest_lap_time)
-            else:
-                formatted_fastest_lap_time1 = '00:00:000'
-
-            if self.lane2.last_lap_time is not None:
-                formatted_last_lap_time2 = self.get_formatted_time(self.lane2.last_lap_time)
-            else:
-                formatted_last_lap_time2 = '00:00:000'
-
-            if self.lane2.fastest_lap_time is not None:
-                formatted_fastest_lap_time2 = self.get_formatted_time(self.lane2.fastest_lap_time)
-            else:
-                formatted_fastest_lap_time2 = '00:00:000'
+                    current = formatted_time
+                lanes.append({
+                    'number': number,
+                    'formatted_current_lap_time': current,
+                    'formatted_last_lap_time': self.get_formatted_time(lane.last_lap_time),
+                    'formatted_fastest_lap_time': self.get_formatted_time(lane.fastest_lap_time),
+                    'num_laps': lane.num_laps,
+                })
 
             return {
                 **self._race_info(),
                 'formatted_time': formatted_time,
-                'formatted_current_lap_time1': formatted_current_lap_time1,
-                'formatted_last_lap_time1': formatted_last_lap_time1,
-                'formatted_fastest_lap_time1': formatted_fastest_lap_time1,
-                'num_laps1': self.lane1.num_laps,
-                'formatted_current_lap_time2': formatted_current_lap_time2,
-                'formatted_last_lap_time2': formatted_last_lap_time2,
-                'formatted_fastest_lap_time2': formatted_fastest_lap_time2,
-                'num_laps2': self.lane2.num_laps,
+                'lanes': lanes,
             }
