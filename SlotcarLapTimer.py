@@ -90,4 +90,7 @@ def lap2():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    # use_reloader=False: the reloader imports this module twice, and the second
+    # process fails with "Failed to add edge detection" because the GPIO pins are
+    # already claimed by the first one.
+    app.run(debug=True, use_reloader=False, host='0.0.0.0')
