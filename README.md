@@ -63,11 +63,32 @@ The setup screen lets you choose which lanes take part, so a 4-lane track can
 run a 2-car race. Lanes that are not selected are hidden and ignored.
 A race ends when every participating lane has finished.
 
+## install on a Raspberry Pi
+
+Tested on Raspberry Pi OS (Bookworm or newer). From the repo folder:
+
+```bash
+sudo apt update
+sudo apt install -y swig python3-dev python3-venv liblgpio-dev
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+GPIO uses `rpi-lgpio`, a drop-in `RPi.GPIO` replacement. The old `RPi.GPIO` package
+fails with "Failed to add edge detection" on current Raspberry Pi OS. `rpi-lgpio` compiles
+a C extension, which is why the apt packages above are needed first (without `swig`
+the install fails with "command 'swig' failed"). The build takes a minute or two.
+
 ## run
 
 ```bash
+source .venv/bin/activate
 python SlotcarLapTimer.py
 ```
+
+On a machine without a Pi (e.g. a laptop) the GPIO part is skipped automatically;
+`pip install -r requirements.txt` is enough there.
 
 ## tests
 
