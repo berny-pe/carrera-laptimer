@@ -6,6 +6,13 @@ The app reads lane signals via GPIO and exposes a small Flask web UI that can be
 - number of laps to race
 - race duration
 
+## buy sensors
+
+The lane sensors used with this project can be bought on Amazon:
+[Buy sensors on Amazon](https://link.amazon/B07p41iq5)
+
+_Disclosure: this is an affiliate link. If you buy through it, I receive a small commission at no extra cost to you._
+
 ## screenshots
 
 Race setup (mode selection) on an iPad:
