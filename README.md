@@ -6,6 +6,16 @@ The app reads lane signals via GPIO and exposes a small Flask web UI that can be
 - number of laps to race
 - race duration
 
+## screenshots
+
+Race setup (mode selection) on an iPad:
+
+![Mode selection on iPad](static/ipad-laptimer-mode-selection.png)
+
+Race screen on an iPad:
+
+![Race screen on iPad](static/ipad-laptimer-race-screen.png)
+
 ## refactored architecture
 
 - `SlotcarLapTimer.py`: Flask entrypoint and route wiring
