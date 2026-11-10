@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for
+from lap_timer import config
 from lap_timer.core import LapTimer
 from lap_timer.gpio_adapter import GPIOLapSensor
+from werkzeug.serving import WSGIRequestHandler
 
 app = Flask(__name__)
 
@@ -89,8 +91,16 @@ def lap2():
     return lap(2)
 
 
+class QuietRequestHandler(WSGIRequestHandler):
+    # Skip the per-request access log lines. Startup messages (IP addresses)
+    # and errors are still printed.
+    def log_request(self, code='-', size='-'):
+        pass
+
+
 if __name__ == '__main__':
     # use_reloader=False: the reloader imports this module twice, and the second
     # process fails with "Failed to add edge detection" because the GPIO pins are
     # already claimed by the first one.
-    app.run(debug=True, use_reloader=False, host='0.0.0.0')
+    app.run(debug=config.DEBUG, use_reloader=False, host='0.0.0.0',
+            request_handler=None if config.DEBUG else QuietRequestHandler)

@@ -10,3 +10,6 @@ LANE_PINS = [18, 23]
 # sensor bounce / double triggers and ignored. Keep well below the fastest
 # realistic lap time.
 MIN_LAP_SECONDS = 1.0
+
+# Debug mode: enables verbose debug output. Set to True while troubleshooting.
+DEBUG = False
