@@ -11,7 +11,7 @@ The app reads lane signals via GPIO and exposes a small Flask web UI that can be
 - `SlotcarLapTimer.py`: Flask entrypoint and route wiring
 - `lap_timer/core.py`: pure timing and lap domain logic (`LapTimer`, `LaneState`)
 - `lap_timer/gpio_adapter.py`: GPIO integration and callback registration
-- `lap_timer/config.py`: constants (`LANE_PINS` = one GPIO pin per lane; its length is the lane count)
+- `lap_timer/config.py`: constants (`LANE_PINS` = one GPIO pin per lane; its length is the lane count; `DEBUG` toggles debug mode)
 - `lap_timer/lanes.py`: resolves the lane pins, including the `SLOT_LANE_PINS` env override
 - `templates/`: server-rendered HTML fragments and page template
 - `static/css/index.css`: extracted page styling
@@ -89,6 +89,16 @@ python SlotcarLapTimer.py
 
 On a machine without a Pi (e.g. a laptop) the GPIO part is skipped automatically;
 `pip install -r requirements.txt` is enough there.
+
+On startup the server prints its addresses (e.g. `Running on http://<pi-ip>:5000`),
+so you can find the IP to open on the tablet.
+
+### debug mode
+
+`DEBUG` in `lap_timer/config.py` (default `False`) controls debug mode:
+
+- `False`: quiet output. Startup still shows the IP addresses, but per-request access logs are hidden. Errors are still printed.
+- `True`: Flask debug mode (debugger and reloader) is enabled and access logs are shown.
 
 ## tests
 
